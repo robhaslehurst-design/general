@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulting Firm — Financial Forecasting Dashboard</title>
+<style>
+:root {
+  --blue:#2F5496; --blue-light:#D6E4F0; --blue-bg:#EDF2F9;
+  --red:#C00000; --green:#548235; --orange:#ED7D31; --gray:#666;
+  --border:#dde3ec; --bg:#f5f7fa; --white:#fff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:#222;font-size:13px}
+
+/* Header */
+header{background:var(--blue);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+header h1{font-size:17px;font-weight:600}
+header .sub{font-size:11px;opacity:.7}
+.hdr-btns{display:flex;gap:8px}
+.hdr-btn{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:5px 14px;border-radius:4px;cursor:pointer;font-size:11px}
+.hdr-btn:hover{background:rgba(255,255,255,.25)}
+
+/* Layout */
+.container{display:grid;grid-template-columns:310px 1fr;gap:0;min-height:calc(100vh - 52px)}
+
+/* Sidebar */
+.sidebar{background:var(--white);border-right:1px solid var(--border);overflow-y:auto;max-height:calc(100vh - 52px)}
+.sidebar h2{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--blue);padding:12px 14px 5px;background:var(--blue-light);font-weight:700;position:sticky;top:0;z-index:2}
+.ig{padding:3px 14px;display:grid;grid-template-columns:1fr 90px;align-items:center;gap:3px;border-bottom:1px solid #f0f2f5}
+.ig:hover{background:#f8fafd}
+.ig label{font-size:11px;color:#444}
+.ig input{width:100%;text-align:right;padding:3px 5px;border:1px solid var(--border);border-radius:3px;font-size:11px;font-family:'SF Mono',Consolas,monospace}
+.ig input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(47,84,150,.15)}
+.ig .u{font-size:9px;color:var(--gray);text-align:right}
+.changed input{background:#FFF9E6!important;border-color:var(--orange)!important}
+
+/* Main */
+.main{padding:18px 22px;overflow-y:auto;max-height:calc(100vh - 52px)}
+
+/* Tabs */
+.tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)}
+.tab{padding:7px 18px;cursor:pointer;font-size:12px;font-weight:500;color:var(--gray);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--blue)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+
+/* Tables */
+.tw{overflow-x:auto;margin-bottom:20px}
+table{border-collapse:collapse;width:100%;min-width:680px}
+th{background:var(--blue);color:#fff;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:7px 10px;text-align:right;white-space:nowrap;position:sticky;top:0}
+th:first-child{text-align:left;min-width:210px}
+td{padding:4px 10px;text-align:right;border-bottom:1px solid #eef1f6;white-space:nowrap;font-family:'SF Mono',Consolas,monospace;font-size:11.5px}
+td:first-child{text-align:left;font-family:'Segoe UI',system-ui,sans-serif;font-weight:400;color:#444}
+tr:hover td{background:#f5f8fc}
+.sr td{background:var(--blue-light)!important;font-weight:700!important;color:var(--blue)!important;font-family:'Segoe UI',system-ui,sans-serif!important;font-size:10px!important;text-transform:uppercase;letter-spacing:.5px;padding:6px 10px}
+.st td{font-weight:600;border-top:1px solid var(--blue);border-bottom:2px solid var(--blue);color:var(--blue)}
+.ind td:first-child{padding-left:22px;font-size:11.5px;color:#666}
+.neg{color:var(--red)}
+.hl td{background:#FFFDE7!important}
+
+/* Charts */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.cc{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:12px}
+.cc h3{font-size:11px;color:var(--blue);margin-bottom:8px;font-weight:600}
+
+/* KPIs */
+.ks{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+.kpi .kl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:3px}
+.kpi .kv{font-size:18px;font-weight:700;color:var(--blue);font-family:'SF Mono',Consolas,monospace}
+.kpi .kd{font-size:10px;margin-top:2px}
+.kpi .kd.up{color:var(--green)}
+.kpi .kd.dn{color:var(--red)}
+
+.tc{display:none}.tc.active{display:block}
+
+@media(max-width:1000px){.container{grid-template-columns:1fr}.sidebar{max-height:none}.ks{grid-template-columns:repeat(3,1fr)}.cg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+ <div><h1>Consulting Firm — Financial Forecast</h1><div class="sub">5-Year P&L, Cashflow & Valuation Model &mdash; standalone, no server required</div></div>
+ <div class="hdr-btns">
+  <button class="hdr-btn" onclick="resetDefaults()">Reset Defaults</button>
+  <button class="hdr-btn" onclick="exportCSV()">Export CSV</button>
+ </div>
+</header>
+
+<div class="container">
+ <div class="sidebar" id="sidebar"></div>
+ <div class="main">
+  <div class="ks" id="kpis"></div>
+  <div class="tabs" id="tabbar">
+   <div class="tab active" data-t="pnl">P&L Statement</div>
+   <div class="tab" data-t="cf">Cashflow</div>
+   <div class="tab" data-t="val">Valuation &amp; Returns</div>
+   <div class="tab" data-t="ptr">Partner Economics</div>
+   <div class="tab" data-t="ch">Charts</div>
+  </div>
+  <div class="tc active" id="t-pnl"><div class="tw"><table id="tbl-pnl"></table></div></div>
+  <div class="tc" id="t-cf"><div class="tw"><table id="tbl-cf"></table></div></div>
+  <div class="tc" id="t-val"><div class="tw"><table id="tbl-val"></table></div></div>
+  <div class="tc" id="t-ptr"><div class="tw"><table id="tbl-ptr"></table></div></div>
+  <div class="tc" id="t-ch"><div class="cg" id="charts"></div></div>
+ </div>
+</div>
+
+<script>
+// ============================================================
+// MODEL ENGINE — exact port of financial_model.py
+// ============================================================
+const DEFAULTS = {
+  num_partners: 220,
+  revenue_per_partner_m: 3.8,
+  partner_growth_rate: 4,        // displayed as %
+  rpp_target_m: 4.1,
+  num_consulting_staff: 1400,
+  gross_margin_pct: 53,          // %
+  gross_margin_target_pct: 55,
+  operating_margin_pct: 28,
+  operating_margin_target_pct: 32,
+  partner_base_pay_k: 380,
+  market_studies_pct: 50,
+  ebitda_fixed_pct: 6,
+  valuation_multiple: 6.25,
+  structural_debt_m: 100,
+  total_shares_m: 100,           // displayed in millions
+  investment_pct_revenue: 2,
+  working_capital_days: 120,
+  dividend_yield: 8,
+  borrowing_rate: 6.5,
+  tax_rate: 21,
+};
+
+let cur = {...DEFAULTS};
+let data = null;    // array of year objects
+let timer = null;
+
+function runModel(c) {
+  const forecastYears = 5;
+  const depLife = 5;
+
+  const pgr = c.partner_growth_rate / 100;
+  const gm0 = c.gross_margin_pct / 100;
+  const gmT = c.gross_margin_target_pct / 100;
+  const om0 = c.operating_margin_pct / 100;
+  const omT = c.operating_margin_target_pct / 100;
+  const msPct = c.market_studies_pct / 100;
+  const tsPct = 1 - msPct;
+  const ebitdaFixPct = c.ebitda_fixed_pct / 100;
+  const ebitdaResShare = 1 / 3;
+  const invPct = c.investment_pct_revenue / 100;
+  const divYield = c.dividend_yield / 100;
+  const borrow = c.borrowing_rate / 100;
+  const taxR = c.tax_rate / 100;
+  const totalShares = c.total_shares_m * 1e6;
+
+  const rppBase = c.revenue_per_partner_m;
+  const rppInc = (c.rpp_target_m - rppBase) / forecastYears;
+  const gmInc = (gmT - gm0) / forecastYears;
+  const omInc = (omT - om0) / forecastYears;
+
+  const capexHist = [];
+  const years = [];
+
+  for (let yr = 0; yr <= forecastYears; yr++) {
+    const partners = c.num_partners * Math.pow(1 + pgr, yr);
+    const rpp = rppBase + rppInc * yr;
+    const revenue = partners * rpp;
+
+    const msRev = revenue * msPct;
+    const tsRev = revenue * tsPct;
+
+    const tGM = gm0 + gmInc * yr;
+    const tOM = om0 + omInc * yr;
+
+    // Cost of Sales
+    const targetCoS = revenue * (1 - tGM);
+    const partnerBaseCost = partners * c.partner_base_pay_k / 1000;
+    const consultingStaff = Math.round(c.num_consulting_staff * Math.pow(1 + pgr, yr));
+    const consultingCost = Math.max(0, targetCoS - partnerBaseCost);
+    const otherCoS = 0;
+    const totalCoS = partnerBaseCost + consultingCost + otherCoS;
+    const grossProfit = revenue - totalCoS;
+    const actualGM = revenue > 0 ? grossProfit / revenue : 0;
+
+    // OpEx
+    const targetOpex = grossProfit - (revenue * tOM);
+    const totalOpex = Math.max(0, targetOpex);
+    const opProfit = grossProfit - totalOpex;
+    const actualOM = revenue > 0 ? opProfit / revenue : 0;
+
+    // EBITDA
+    const ebitdaBase = revenue * ebitdaFixPct;
+    const residual = Math.max(0, opProfit - ebitdaBase);
+    const ebitda = ebitdaBase + residual * ebitdaResShare;
+    const partnerBonus = residual * (1 - ebitdaResShare);
+    const totalPartnerComp = partnerBaseCost + partnerBonus;
+    const perPartnerComp = partners > 0 ? totalPartnerComp / partners : 0;
+
+    // Capex & Depreciation
+    const capex = revenue * invPct;
+    capexHist.push(capex);
+    let depreciation = 0;
+    for (let p = 0; p < capexHist.length; p++) {
+      if ((yr - p) < depLife) depreciation += capexHist[p] / depLife;
+    }
+
+    // Below the line
+    const interest = c.structural_debt_m * borrow;
+    const preTax = ebitda - depreciation - interest;
+    const tax = Math.max(0, preTax * taxR);
+    const netIncome = preTax - tax;
+
+    // Valuation
+    const ev = ebitda * c.valuation_multiple;
+    const equityVal = Math.max(0, ev - c.structural_debt_m);
+    const sharePrice = totalShares > 0 ? (equityVal * 1e6) / totalShares : 0;
+
+    // Dividends
+    const totalDiv = equityVal * divYield;
+    const dps = totalShares > 0 ? (totalDiv * 1e6) / totalShares : 0;
+
+    // Working capital
+    const wc = revenue * (c.working_capital_days / 365);
+
+    // Staff metrics
+    const revPerConsultant = consultingStaff > 0 ? (revenue * 1000) / consultingStaff : 0;
+    const leverage = partners > 0 ? consultingStaff / partners : 0;
+    const impliedSalary = consultingStaff > 0 ? (consultingCost * 1000) / consultingStaff : 0;
+
+    // Cash from ops
+    const cashOps = netIncome + depreciation;
+
+    years.push({
+      year: yr, partners, rpp, revenue,
+      msRev, tsRev,
+      partnerBaseCost, consultingCost, otherCoS, totalCoS,
+      grossProfit, actualGM,
+      totalOpex, opProfit, actualOM,
+      ebitda, partnerBonus, totalPartnerComp, perPartnerComp,
+      depreciation, capex, interest, tax, netIncome,
+      ev, equityVal, sharePrice, dps, totalDiv,
+      wc, consultingStaff, revPerConsultant, leverage, impliedSalary,
+      cashOps,
+    });
+  }
+
+  // WC changes & FCF
+  for (let i = 0; i < years.length; i++) {
+    years[i].wcChange = i === 0 ? 0 : years[i].wc - years[i-1].wc;
+    years[i].fcf = years[i].cashOps - years[i].capex - years[i].wcChange;
+  }
+
+  return years;
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+const SECTIONS = [
+  {title:"Revenue", fields:[
+    {k:"num_partners",label:"Partners (Yr 0)",u:"#",step:1},
+    {k:"revenue_per_partner_m",label:"Revenue / Partner",u:"$M",step:0.1},
+    {k:"partner_growth_rate",label:"Partner Growth Rate",u:"%",step:0.5},
+    {k:"rpp_target_m",label:"RPP Target (Yr 5)",u:"$M",step:0.1},
+    {k:"num_consulting_staff",label:"Consulting Staff",u:"#",step:10},
+  ]},
+  {title:"Margins", fields:[
+    {k:"gross_margin_pct",label:"Gross Margin (Yr 0)",u:"%",step:0.5},
+    {k:"gross_margin_target_pct",label:"Gross Margin Target (Yr 5)",u:"%",step:0.5},
+    {k:"operating_margin_pct",label:"Oper. Margin (Yr 0)",u:"%",step:0.5},
+    {k:"operating_margin_target_pct",label:"Oper. Margin Target (Yr 5)",u:"%",step:0.5},
+  ]},
+  {title:"Cost Structure", fields:[
+    {k:"partner_base_pay_k",label:"Partner Base Pay",u:"$K",step:10},
+    {k:"market_studies_pct",label:"Market Studies Mix",u:"%",step:1},
+    {k:"investment_pct_revenue",label:"Investment (Capex)",u:"% rev",step:0.5},
+  ]},
+  {title:"EBITDA & Valuation", fields:[
+    {k:"ebitda_fixed_pct",label:"EBITDA Fixed %",u:"% rev",step:0.5},
+    {k:"valuation_multiple",label:"EV / EBITDA Multiple",u:"x",step:0.25},
+    {k:"structural_debt_m",label:"Structural Debt",u:"$M",step:5},
+    {k:"total_shares_m",label:"Total Shares",u:"M",step:1},
+  ]},
+  {title:"Capital & Tax", fields:[
+    {k:"working_capital_days",label:"Working Capital Days",u:"days",step:5},
+    {k:"dividend_yield",label:"Dividend Yield",u:"%",step:0.5},
+    {k:"borrowing_rate",label:"Borrowing Rate",u:"%",step:0.25},
+    {k:"tax_rate",label:"Tax Rate",u:"%",step:1},
+  ]},
+];
+
+function buildSidebar() {
+  let h = '';
+  for (const s of SECTIONS) {
+    h += `<h2>${s.title}</h2>`;
+    for (const f of s.fields) {
+      h += `<div class="ig" id="g-${f.k}"><label>${f.label} <span class="u">(${f.u})</span></label>
+        <input type="number" id="i-${f.k}" value="${cur[f.k]}" step="${f.step}" data-k="${f.k}"></div>`;
+    }
+  }
+  document.getElementById('sidebar').innerHTML = h;
+  document.querySelectorAll('.ig input').forEach(el => el.addEventListener('input', onInput));
+}
+
+function onInput(e) {
+  const k = e.target.dataset.k;
+  const v = parseFloat(e.target.value);
+  if (isNaN(v)) return;
+  cur[k] = v;
+  const g = document.getElementById('g-'+k);
+  Math.abs(v - DEFAULTS[k]) > 0.001 ? g.classList.add('changed') : g.classList.remove('changed');
+  clearTimeout(timer);
+  timer = setTimeout(recalc, 200);
+}
+
+function resetDefaults() {
+  cur = {...DEFAULTS};
+  for (const s of SECTIONS) for (const f of s.fields) {
+    document.getElementById('i-'+f.k).value = DEFAULTS[f.k];
+    document.getElementById('g-'+f.k).classList.remove('changed');
+  }
+  recalc();
+}
+
+// ============================================================
+// RECALC & RENDER
+// ============================================================
+function recalc() {
+  data = runModel(cur);
+  renderKPIs();
+  renderPnL();
+  renderCF();
+  renderVal();
+  renderPtr();
+  if (document.querySelector('.tab.active')?.dataset.t === 'ch') renderCharts();
+}
+
+// ============================================================
+// FORMATTING
+// ============================================================
+function fM(v){return '$'+v.toFixed(1)+'M'}
+function fP(v){return (v*100).toFixed(1)+'%'}
+function fPr(v){return '$'+v.toFixed(2)}
+function fI(v){return Math.round(v).toLocaleString()}
+function fX(v){return v.toFixed(1)+'x'}
+function cagr(a,b){return a>0?((Math.pow(b/a,0.2)-1)*100).toFixed(1)+'%':'—'}
+
+// ============================================================
+// KPI STRIP
+// ============================================================
+function renderKPIs() {
+  const y0=data[0], y5=data[data.length-1];
+  const ks=[
+    {l:'Revenue (Yr 5)',v:fM(y5.revenue),d:'CAGR '+cagr(y0.revenue,y5.revenue),up:y5.revenue>y0.revenue},
+    {l:'EBITDA (Yr 5)',v:fM(y5.ebitda),d:'CAGR '+cagr(y0.ebitda,y5.ebitda),up:y5.ebitda>y0.ebitda},
+    {l:'Oper. Margin (Yr 5)',v:(y5.actualOM*100).toFixed(1)+'%',d:(y5.actualOM>y0.actualOM?'+':'')+((y5.actualOM-y0.actualOM)*100).toFixed(1)+'pp',up:y5.actualOM>=y0.actualOM},
+    {l:'Share Price (Yr 5)',v:fPr(y5.sharePrice),d:'CAGR '+cagr(y0.sharePrice,y5.sharePrice),up:y5.sharePrice>y0.sharePrice},
+    {l:'DPS (Yr 5)',v:fPr(y5.dps),d:'Yield '+fPr(y5.sharePrice>0?(y5.dps/y5.sharePrice)*100:0).replace('$','')+'%',up:true},
+    {l:'Free Cash Flow (Yr 5)',v:fM(y5.fcf),d:data[1].fcf>0?'CAGR '+cagr(data[1].fcf,y5.fcf):'—',up:y5.fcf>0},
+  ];
+  document.getElementById('kpis').innerHTML=ks.map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv">${k.v}</div><div class="kd ${k.up?'up':'dn'}">${k.d}</div></div>`).join('');
+}
+
+// ============================================================
+// TABLE BUILDER
+// ============================================================
+function buildTbl(id, spec) {
+  let h='<thead><tr><th>Metric</th>';
+  for (const y of data) h+=`<th>Year ${y.year}</th>`;
+  h+='<th>5Y CAGR</th></tr></thead><tbody>';
+  for (const r of spec) {
+    if (r.sec) { h+=`<tr class="sr"><td colspan="${data.length+2}">${r.sec}</td></tr>`; continue; }
+    const cls=[];
+    if(r.ind) cls.push('ind'); if(r.st) cls.push('st'); if(r.hl) cls.push('hl');
+    h+=`<tr class="${cls.join(' ')}"><td>${r.label}</td>`;
+    const vals=data.map(y=>r.get(y));
+    for(const v of vals){const s=r.fmt(v);h+=`<td${v<0?' class="neg"':''}>${s}</td>`}
+    h+=`<td>${r.cg&&vals[0]>0&&vals[vals.length-1]>0?cagr(vals[0],vals[vals.length-1]):'—'}</td></tr>`;
+  }
+  h+='</tbody>';
+  document.getElementById(id).innerHTML=h;
+}
+
+// ============================================================
+// P&L
+// ============================================================
+function renderPnL(){buildTbl('tbl-pnl',[
+  {sec:'Revenue'},
+  {label:'Partners (#)',get:y=>y.partners,fmt:fI},
+  {label:'Revenue per Partner',get:y=>y.rpp,fmt:v=>'$'+v.toFixed(2)+'M'},
+  {label:'Total Revenue',get:y=>y.revenue,fmt:fM,st:1,cg:1},
+  {label:'Market Studies',get:y=>y.msRev,fmt:fM,ind:1},
+  {label:'Transformation / Strategy',get:y=>y.tsRev,fmt:fM,ind:1},
+  {sec:'Cost of Sales'},
+  {label:'Partner Base Cost',get:y=>y.partnerBaseCost,fmt:fM,ind:1},
+  {label:'Consulting Staff Cost',get:y=>y.consultingCost,fmt:fM,ind:1},
+  {label:'Other Cost of Sales',get:y=>y.otherCoS,fmt:fM,ind:1},
+  {label:'Total Cost of Sales',get:y=>y.totalCoS,fmt:fM},
+  {label:'Gross Profit',get:y=>y.grossProfit,fmt:fM,st:1,cg:1},
+  {label:'Gross Margin',get:y=>y.actualGM,fmt:fP},
+  {sec:'Operating Expenses'},
+  {label:'Total OpEx',get:y=>y.totalOpex,fmt:fM,cg:1},
+  {label:'Operating Profit',get:y=>y.opProfit,fmt:fM,st:1,cg:1},
+  {label:'Operating Margin',get:y=>y.actualOM,fmt:fP},
+  {sec:'EBITDA & Partner Split'},
+  {label:'EBITDA',get:y=>y.ebitda,fmt:fM,hl:1,cg:1},
+  {label:'Partner Bonus Pool',get:y=>y.partnerBonus,fmt:fM,ind:1},
+  {sec:'Below the Line'},
+  {label:'Depreciation',get:y=>y.depreciation,fmt:fM,ind:1},
+  {label:'Interest Expense',get:y=>y.interest,fmt:fM,ind:1},
+  {label:'Tax',get:y=>y.tax,fmt:fM,ind:1},
+  {label:'Net Income',get:y=>y.netIncome,fmt:fM,st:1,cg:1},
+])}
+
+// ============================================================
+// CASHFLOW
+// ============================================================
+function renderCF(){buildTbl('tbl-cf',[
+  {sec:'Operating Cashflow'},
+  {label:'Net Income',get:y=>y.netIncome,fmt:fM,cg:1},
+  {label:'Add Back: Depreciation',get:y=>y.depreciation,fmt:fM,ind:1},
+  {label:'Cash from Operations',get:y=>y.cashOps,fmt:fM,st:1,cg:1},
+  {sec:'Investing'},
+  {label:'Capital Expenditure',get:y=>y.capex,fmt:fM},
+  {label:'Working Capital Change',get:y=>y.wcChange,fmt:fM},
+  {label:'Total Working Capital',get:y=>y.wc,fmt:fM,ind:1},
+  {sec:'Free Cash Flow'},
+  {label:'Free Cash Flow',get:y=>y.fcf,fmt:fM,st:1,hl:1,cg:1},
+  {sec:'Returns to Shareholders'},
+  {label:'Total Dividends Paid',get:y=>y.totalDiv,fmt:fM,cg:1},
+  {label:'Dividend per Share',get:y=>y.dps,fmt:fPr},
+  {label:'Dividend Coverage (FCF / Div)',get:y=>y.totalDiv>0?y.fcf/y.totalDiv:0,fmt:fX},
+])}
+
+// ============================================================
+// VALUATION
+// ============================================================
+function renderVal(){buildTbl('tbl-val',[
+  {sec:'EBITDA Bridge'},
+  {label:'Operating Profit',get:y=>y.opProfit,fmt:fM,cg:1},
+  {label:'EBITDA (6% + 1/3 residual)',get:y=>y.ebitda,fmt:fM,st:1,cg:1},
+  {label:'Partner Bonus (2/3 residual)',get:y=>y.partnerBonus,fmt:fM},
+  {sec:'Enterprise & Equity Value'},
+  {label:'Enterprise Value (EBITDA × multiple)',get:y=>y.ev,fmt:fM,cg:1},
+  {label:'Less: Structural Debt',get:y=>cur.structural_debt_m,fmt:v=>'($'+v.toFixed(1)+'M)'},
+  {label:'Equity Value',get:y=>y.equityVal,fmt:fM,st:1,cg:1},
+  {sec:'Per-Share Metrics'},
+  {label:'Share Price',get:y=>y.sharePrice,fmt:fPr,hl:1,cg:1},
+  {label:'Dividend per Share',get:y=>y.dps,fmt:fPr,cg:1},
+  {label:'Total Dividends Paid',get:y=>y.totalDiv,fmt:fM,cg:1},
+  {label:'Cumulative Div (from Yr 0)',get:y=>{let s=0;for(const d of data){s+=d.totalDiv;if(d.year===y.year)break}return s},fmt:fM},
+])}
+
+// ============================================================
+// PARTNER ECONOMICS
+// ============================================================
+function renderPtr(){buildTbl('tbl-ptr',[
+  {sec:'Headcount'},
+  {label:'Partners',get:y=>y.partners,fmt:fI},
+  {label:'Consulting Staff',get:y=>y.consultingStaff,fmt:fI},
+  {label:'Leverage (Staff / Partner)',get:y=>y.leverage,fmt:fX},
+  {sec:'Productivity'},
+  {label:'Revenue per Partner',get:y=>y.rpp,fmt:v=>'$'+v.toFixed(2)+'M'},
+  {label:'Revenue per Consultant',get:y=>y.revPerConsultant,fmt:v=>'$'+fI(v)+'K'},
+  {label:'Implied Avg Consultant Salary',get:y=>y.impliedSalary,fmt:v=>'$'+fI(v)+'K'},
+  {sec:'Partner Compensation'},
+  {label:'Total Partner Base Cost',get:y=>y.partnerBaseCost,fmt:fM},
+  {label:'Partner Bonus Pool',get:y=>y.partnerBonus,fmt:fM,cg:1},
+  {label:'Total Partner Compensation',get:y=>y.totalPartnerComp,fmt:fM,st:1,cg:1},
+  {label:'Per-Partner Total Comp',get:y=>y.perPartnerComp,fmt:v=>'$'+v.toFixed(3)+'M',hl:1,cg:1},
+])}
+
+// ============================================================
+// CHARTS (canvas, no dependencies)
+// ============================================================
+function renderCharts(){
+  const g=document.getElementById('charts'); g.innerHTML='';
+  const labels=data.map(y=>'Y'+y.year);
+  const specs=[
+    {title:'Revenue ($M)',data:data.map(y=>y.revenue),color:'#2F5496',type:'bar'},
+    {title:'Margins (%)',ds:[{l:'Gross',data:data.map(y=>y.actualGM*100),c:'#2F5496'},{l:'Operating',data:data.map(y=>y.actualOM*100),c:'#C00000'}],type:'ml'},
+    {title:'EBITDA vs Partner Bonus ($M)',ds:[{l:'EBITDA',data:data.map(y=>y.ebitda),c:'#2F5496'},{l:'Bonus',data:data.map(y=>y.partnerBonus),c:'#ED7D31'}],type:'mb'},
+    {title:'Share Price ($)',data:data.map(y=>y.sharePrice),color:'#2F5496',type:'line'},
+    {title:'Free Cash Flow ($M)',data:data.map(y=>y.fcf),color:'#548235',type:'bar'},
+    {title:'Per-Partner Comp ($M)',data:data.map(y=>y.perPartnerComp),color:'#ED7D31',type:'bar'},
+  ];
+  for(const s of specs){
+    const d=document.createElement('div');d.className='cc';
+    d.innerHTML=`<h3>${s.title}</h3><canvas></canvas>`;
+    g.appendChild(d);
+    setTimeout(()=>drawChart(d.querySelector('canvas'),labels,s),0);
+  }
+}
+
+function drawChart(cv,labels,cfg){
+  const ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.parentElement.clientWidth-24,H=190;
+  cv.width=W*dpr;cv.height=H*dpr;
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+  const pL=52,pR=12,pT=10,pB=22,cW=W-pL-pR,cH=H-pT-pB;
+  let all=[];
+  if(cfg.ds) for(const d of cfg.ds) all.push(...d.data); else all=cfg.data;
+  let mn=Math.min(...all)*.95,mx=Math.max(...all)*1.05;
+  if(mn===mx){mn-=1;mx+=1}
+  const sY=v=>pT+cH*(1-(v-mn)/(mx-mn));
+  const n=labels.length,bW=cW/n;
+
+  // grid
+  ctx.strokeStyle='#e0e4eb';ctx.lineWidth=.5;
+  for(let i=0;i<=4;i++){
+    const yy=pT+(cH/4)*i;ctx.beginPath();ctx.moveTo(pL,yy);ctx.lineTo(W-pR,yy);ctx.stroke();
+    ctx.fillStyle='#888';ctx.font='9px system-ui';ctx.textAlign='right';
+    ctx.fillText((mx-(mx-mn)*(i/4)).toFixed(1),pL-4,yy+3);
+  }
+  ctx.fillStyle='#666';ctx.font='9px system-ui';ctx.textAlign='center';
+  for(let i=0;i<n;i++) ctx.fillText(labels[i],pL+bW*i+bW/2,H-4);
+
+  if(cfg.type==='bar'){
+    for(let i=0;i<n;i++){const x=pL+bW*i+bW*.15,w=bW*.7,t=sY(cfg.data[i]),b=sY(Math.max(0,mn));ctx.fillStyle=cfg.color;ctx.globalAlpha=.85;ctx.fillRect(x,t,w,b-t);ctx.globalAlpha=1}
+  }else if(cfg.type==='line'){
+    ctx.strokeStyle=cfg.color;ctx.lineWidth=2.5;ctx.beginPath();
+    for(let i=0;i<n;i++){const x=pL+bW*i+bW/2,y=sY(cfg.data[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+    ctx.stroke();ctx.globalAlpha=.1;ctx.fillStyle=cfg.color;
+    ctx.lineTo(pL+bW*(n-1)+bW/2,sY(mn));ctx.lineTo(pL+bW/2,sY(mn));ctx.fill();ctx.globalAlpha=1;
+    for(let i=0;i<n;i++){ctx.fillStyle=cfg.color;ctx.beginPath();ctx.arc(pL+bW*i+bW/2,sY(cfg.data[i]),3.5,0,Math.PI*2);ctx.fill()}
+  }else if(cfg.type==='ml'){
+    for(const ds of cfg.ds){ctx.strokeStyle=ds.c;ctx.lineWidth=2.5;ctx.beginPath();
+      for(let i=0;i<n;i++){const x=pL+bW*i+bW/2,y=sY(ds.data[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+      ctx.stroke();for(let i=0;i<n;i++){ctx.fillStyle=ds.c;ctx.beginPath();ctx.arc(pL+bW*i+bW/2,sY(ds.data[i]),3,0,Math.PI*2);ctx.fill()}}
+    let lx=pL+4;ctx.font='9px system-ui';for(const ds of cfg.ds){ctx.fillStyle=ds.c;ctx.fillRect(lx,pT+1,10,3);ctx.fillText(ds.l,lx+14,pT+7);lx+=ctx.measureText(ds.l).width+26}
+  }else if(cfg.type==='mb'){
+    const nd=cfg.ds.length,gF=.15,sW=bW*(1-gF*2)/nd;
+    for(let d=0;d<nd;d++){const ds=cfg.ds[d];for(let i=0;i<n;i++){const x=pL+bW*i+bW*gF+sW*d,t=sY(ds.data[i]),b=sY(Math.max(0,mn));ctx.fillStyle=ds.c;ctx.globalAlpha=.85;ctx.fillRect(x,t,sW*.9,b-t);ctx.globalAlpha=1}}
+    let lx=pL+4;ctx.font='9px system-ui';for(const ds of cfg.ds){ctx.fillStyle=ds.c;ctx.fillRect(lx,pT+1,10,7);ctx.fillText(ds.l,lx+14,pT+9);lx+=ctx.measureText(ds.l).width+26}
+  }
+}
+
+// ============================================================
+// CSV EXPORT
+// ============================================================
+function exportCSV(){
+  if(!data) return;
+  const rows=[['Metric',...data.map(y=>'Year '+y.year)]];
+  const add=(l,get)=>rows.push([l,...data.map(y=>get(y).toFixed(2))]);
+  add('Partners',y=>y.partners); add('Revenue ($M)',y=>y.revenue);
+  add('Gross Profit ($M)',y=>y.grossProfit); add('Gross Margin',y=>y.actualGM*100);
+  add('Operating Profit ($M)',y=>y.opProfit); add('Operating Margin',y=>y.actualOM*100);
+  add('EBITDA ($M)',y=>y.ebitda); add('Net Income ($M)',y=>y.netIncome);
+  add('Free Cash Flow ($M)',y=>y.fcf); add('Share Price ($)',y=>y.sharePrice);
+  add('DPS ($)',y=>y.dps); add('Total Dividends ($M)',y=>y.totalDiv);
+  add('Per-Partner Comp ($M)',y=>y.perPartnerComp);
+  add('Working Capital ($M)',y=>y.wc);
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='financial_forecast.csv';a.click();
+}
+
+// ============================================================
+// TABS
+// ============================================================
+document.getElementById('tabbar').addEventListener('click',e=>{
+  const t=e.target.closest('.tab');if(!t) return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tc').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('t-'+t.dataset.t).classList.add('active');
+  if(t.dataset.t==='ch') renderCharts();
+});
+
+// ============================================================
+// BOOT
+// ============================================================
+buildSidebar();
+recalc();
+</script>
+</body>
+</html>
